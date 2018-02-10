@@ -1,0 +1,12 @@
+gradle
+build
+
+*.propertieS
+
+
+
+
+
+.idea
+.gradle
+*.iml
