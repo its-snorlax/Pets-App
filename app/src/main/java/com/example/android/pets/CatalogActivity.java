@@ -15,18 +15,27 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
+
+import com.example.android.pets.data.PetContract.PetEntry;
+import com.example.android.pets.data.PetsDbHelper;
 
 /**
  * Displays list of pets that were entered and stored in the app.
  */
 public class CatalogActivity extends AppCompatActivity {
+
+    private PetsDbHelper petsDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +51,13 @@ public class CatalogActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+        petsDbHelper = new PetsDbHelper(this);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        displayDatabaseInfo();
     }
 
     @Override
@@ -58,7 +74,8 @@ public class CatalogActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
-                // Do nothing for now
+                insertPetData();
+                displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
@@ -67,4 +84,60 @@ public class CatalogActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
+    private void displayDatabaseInfo() {
+        SQLiteDatabase readableDatabase = petsDbHelper.getReadableDatabase();
+        String [] projection = {
+          PetEntry._ID,
+                PetEntry.PET_NAME,
+                PetEntry.BREED_NAME,
+                PetEntry.GENDER,
+                PetEntry.WEIGHT
+        };
+
+        Cursor cursor = readableDatabase.query(PetEntry.TABLE_NAME, projection,
+                null, null, null, null, null);
+
+        TextView petList = (TextView) findViewById(R.id.text_view_pet);
+        try {
+            petList.setText ("pet table contain - " + cursor.getCount() + "pets. \n\n");
+            petList.append(PetEntry._ID + " - " );
+            petList.append(PetEntry.PET_NAME + " - ");
+            petList.append(PetEntry.BREED_NAME + " - ");
+            petList.append(PetEntry.GENDER + " - ");
+            petList.append(PetEntry.WEIGHT + "\n");
+
+            int _idColumn = cursor.getColumnIndex(PetEntry._ID);
+            int nameColumn = cursor.getColumnIndex(PetEntry.PET_NAME);
+            int breedColumn = cursor.getColumnIndex(PetEntry.BREED_NAME);
+            int genderColumn = cursor.getColumnIndex(PetEntry.GENDER);
+            int weightColumn =  cursor.getColumnIndex(PetEntry.WEIGHT);
+
+            while (cursor.moveToNext()){
+                int currentId = cursor.getInt(_idColumn);
+                String currentName = cursor.getString(nameColumn);
+                String breedName = cursor.getString(breedColumn);
+                String gender = cursor.getString(genderColumn);
+                String weight = cursor.getString(weightColumn);
+                petList.append(("\n" + currentId + " - " + currentName + " - " + breedName + " - " + gender + " - " +weight));
+            }
+        }finally {
+            cursor.close();
+        }
+    }
+
+    private void insertPetData(){
+        petsDbHelper = new PetsDbHelper(this);
+        SQLiteDatabase db = this.petsDbHelper.getWritableDatabase();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(PetEntry.PET_NAME,"Toto");
+        contentValues.put(PetEntry.BREED_NAME,"terrier");
+        contentValues.put(PetEntry.GENDER,PetEntry.GENDER_MALE);
+        contentValues.put(PetEntry.WEIGHT,12);
+
+        db.insert(PetEntry.TABLE_NAME,null,contentValues);
+    }
+
 }
+
+
